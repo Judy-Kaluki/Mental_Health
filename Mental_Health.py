@@ -9,11 +9,11 @@ import plotly.express as px
 st.cache(suppress_st_warning=True)
 # Read the CSV files
 st.title('Global Mental Health Insights - Clustering Analysis')
-st.markdown('''According to the World Health Organiztion (WHO), mental well being is not only the absence of mental illness but a state 
+st.markdown('''
+            According to the World Health Organiztion (WHO), mental well being is not only the absence of mental illness but a state 
             of  well-being encompassing the physical, mental and social. The global burden of mental health disorders is significant and growing overtime.
             There is eunequal burden among countries and socio-economic groups. Interventions by key organizations, including WHO, play a crucial role in 
             supporting countries to strengthen their mental health systems and ensuring that mental health care is integrated to primary care settings.
-
             This project aims to explore:
             -The distribution and burden of mental health across different countries and regions
             -Examining WHO support in relation to the burden of mental disorders
@@ -23,11 +23,11 @@ st.markdown('''According to the World Health Organiztion (WHO), mental well bein
 ''')
 
 st.markdown('**Key definitions**')
-st.markdown('''-**DALY**: Disability-adjusted life year is a measure that represents the loss of the equivalent of one year of full health. 
+st.markdown('''
+            -**DALY**: Disability-adjusted life year is a measure that represents the loss of the equivalent of one year of full health. 
                 DALYs for a disease or health condition are the sum of years of life lost due to premature mortality (YLLs) and years of healthy life lost due 
                 to disability (YLDs) due to prevalent cases of the disease or health condition in a population.
-                
-                -**Prevalence**: The proportion of a population who have a specific characteristic in a given time period.
+            -**Prevalence**: The proportion of a population who have a specific characteristic in a given time period.
             ''')
 
 st.subheader('Data loading and Analysis')
@@ -74,7 +74,8 @@ df_daly = df_daly.rename(columns={'Code (Data6)': 'Country_Code'})
 merged_df=df_daly.merge(df_countries, on='Country_Code', how='left')
 st.dataframe(merged_df)
 
-st.markdown('We shall drop redundant columns from the data frame :Country_Code,Country Code,Income group (group) ')
+st.markdown('''We shall drop redundant columns from the data frame :Country_Code,Country Code,Income group (group)''')
+
 merged_df=merged_df.drop(columns=['Country_Code','Country Code','Country_Orig','Income group (group)'], axis=1)
 
 #Replace blank values in Income group with "No Region"
@@ -130,15 +131,16 @@ sns.histplot(data=merged_df, x=selected_variable, bins=30, kde=True, ax=ax)
 ax.set_title(f"Histogram of {selected_variable}")
 st.pyplot(fig)
 
-st.markdown('''From the above we can note that the there is a considerable spread in the DALY variable and numerous 
+st.markdown('''
+            
+            From the above we can note that the there is a considerable spread in the DALY variable and numerous 
             outliers. The data shows that many countries have DALY values that are considerably higher than the average.Further, from the 
             histogram, we can observe that the data is positively skewed with a long tail. This means that a majority of the country
             are concentrated around the lower end of the DALY distribution. A similar trend is observed with the GDP per capita and health expenditure per capita values. 
-            
-            From the above we can summarize the following
-            - From the high DALY values, there is a significant burden of mental health disorders globally
-            - From the distribution, some countries experience a disproportionately higher burden as compared to others
-            - The median WHO support per 100,000 is 1.9 amd majority of the countries are on the lower end of the distribution.
+            Insights from the plots can be summarised as follows
+                - The high DALY values signify a heavy burden of mental health disorders globally
+                - From the distribution, some countries experience a disproportionately higher burden as compared to others
+                - The median WHO support per 100,000 is 1.9 amd majority of the countries are on the lower end of the distribution.
             '''
     
 )
@@ -162,9 +164,9 @@ st.caption('Histogram after log transformation')
 
 st.markdown('**Additional Variables**')
 
-st.markdown(''' We shall add a new variable health expenditure:GDP ratio to determine the share of GDP going to health
-'''
-)
+st.markdown(' We shall add a new variable health expenditure:GDP ratio to determine the share of GDP going to health')
+
+
 #Add a column- ratio of health expenditure to GDP
 merged_df['Health_exp:GDP']=(merged_df['Health expenditure per capita.Value']/merged_df['GDP_per_Capita']).replace([np.inf, -np.inf], 0)
 
@@ -197,13 +199,13 @@ st.caption('Correlation matrix')
 #Display the correlation matrix in a table
 st.write(correlation_matrix.style.background_gradient(cmap='coolwarm'))
 
-st.markdown('''- DALY and GDP per capita are negatively correlated. This suggests that high income countries have lower DALY values
+st.markdown('''
+            - DALY and GDP per capita are negatively correlated. This suggests that high income countries have lower DALY values
             than lower income countries. 
-
-               - DALY and health expenditure per capita, and the share of GDP going to health expenditure are positively correlated.
+            - DALY and health expenditure per capita, and the share of GDP going to health expenditure are positively correlated.
             This presents the impact of mental health disorders, where higher expenditure is directed towards addressing the indentified health concerns.
             Further, with more funding directed towards health, more cases can be identified and treated.  
-                - 
+            -WHO support has increased over time as well as more countries adopting mental health policy and legislation 
 
             ''')
 
@@ -243,12 +245,21 @@ plt.xticks(rotation=45, ha='right')
 st.pyplot(fig)
 st.caption('Feature importances')
 
+st.markdown(''' 
+                It is clear that the economic indicators of health expenditure per capita and GDP per capita heavily influence 
+                DALY values. This supports the earlier observations of higher funding towards healthcare promoted indentification
+            and addressing of mental health disorders.
+                Further, DALY values have been increasing over time due to increased awareness, increased identification of cases.
 
-
-st.markdown(''' ''')
+''')
 
 st.subheader('Model development')
 #Aggregate the dataframe for clustering
+st.markdown('''
+            The aim of the project is to group countries share similar mental health profiles, which can inform targeted interventions
+            and advise on national mental health policies. Further, strategies can be specificaly tailored to address the different clusters
+
+''')
 
 df_agg=merged_df.groupby(['Country','Income group','Year'], as_index=False).agg(
                             DALY_log=('DALY_log', 'mean'),
@@ -257,11 +268,19 @@ df_agg=merged_df.groupby(['Country','Income group','Year'], as_index=False).agg(
                             Mental_health_professional=('Mental_health_professional','mean'))
 
 st.dataframe(df_agg)
+st.caption('Dataframe aggregated by country, income group and year')
 
+st.markdown('**Clustering using K-means**')
+st.markdown('''
+            To model the clusters, K-means algorithm shall be used. As one of the assumptions on the data 
+            is that the variance within each cluster is roughly equal across all dimensions, the features are standardized.
+            Thes elbow method was used to determine the optimal number of clusters.
+'''
+)
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
-#Drop rows where WHO support and mental health professional is zero
+#Drop rows where WHO support or mental health professional is zero
 zero_df=df_agg[(df_agg['WHO_Support_100k']==0)|(df_agg['Mental_health_professional']==0)].index
 df_agg=df_agg.drop(zero_df)
 
@@ -282,6 +301,13 @@ st.line_chart(elbow_data.set_index('Clusters'))
 
 st.caption('Elbow method for optimal k')
 
+st.markdown('''
+            From the chart above, the optimal number of clusters is 3
+
+'''
+
+)
+
 # Apply K-Means clustering with the optimal number of clusters
 optimal_k = 3
 kmeans = KMeans(n_clusters=optimal_k, random_state=0)
@@ -290,8 +316,26 @@ df_agg['Cluster'] = kmeans.fit_predict(X_scaled)
 # Display the first 5 rows of the aggregated dataframe with cluster assignments
 df_agg['DALY']=np.exp(df_agg['DALY_log'])
 
+st.markdown('**Cluster Analysis')
+st.markdown('''
+            Dataframe with the assigned clusters is shown below.
+''')
 st.dataframe(df_agg.head())
 
+st.markdown('''
+            The three different and distinct clusters are shown below:
+            - Cluster 0: This is the cluster with the highest DALY at a mean DALY of 37,914. Further, it has the lowest health expenditure
+            to GDP ratio and the lowest WHO support per 100k. For this cluster, increasing the WHO support
+            and funding health care is more likely to improve the mental health outcomes
+            - Cluster 1: This cluster has moderate average DALYs, with the highest WHO support_100k. However these countries
+            have the lowest average mental health professionals. They also have the highest healthcare funding in relation to GDP per 
+            capita. The countries could prioritize reallocation of resources to train more mental health professional, development
+            of mental health facilities
+            -Cluster 2: These are the countries with the lowest average DALYs and the highest average mental health professional per 100,000.
+            These countries have relatively better mental health outcomes and resource allocation as compared to the other clusters.
+            ''' 
+
+)
 # Group by cluster and calculate statistics
 cluster_stats = df_agg.groupby('Cluster')[['DALY', 'Health_exp_GDP', 'WHO_Support_100k','Mental_health_professional']].agg(['mean', 'std'])
 
