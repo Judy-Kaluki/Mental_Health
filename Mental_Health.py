@@ -73,12 +73,13 @@ df_daly = df_daly.rename(columns={'Code (Data6)': 'Country_Code'})
 merged_df=df_daly.merge(df_countries, on='Country_Code', how='left')
 st.dataframe(merged_df)
 
-st.markdown('We shall drop redundant columns from the data frame')
+st.markdown('We shall drop redundant columns from the data frame :Country_Code,Country Code,Income group (group) ')
 merged_df=merged_df.drop(columns=['Country_Code','Country Code','Country_Orig','Income group (group)'], axis=1)
 
 #Replace blank values in Income group with "No Region"
 merged_df['Income group'].fillna("No Region", inplace=True)
 
+st.markdown('**Merged_df Columns and data types**')
 #Display column names and data types
 buffer = io.StringIO()
 merged_df.info(buf=buffer)
@@ -88,15 +89,21 @@ st.text(s)
 st.subheader('Descriptive Statistics')
 # Summary of the numercial columns
 st.write(merged_df.describe())
+st.markdown('''The DALY mean is 35,651 DALYs with a standard deviation of 197,589. The feature is widespread over a large range of values.
+            The mental health policy, legislation and professional support are key factors contributing to DALY levels. However, majority of the rows are null. 
+            Thus more data should be collected on these features to create a better understanding of the factors influencing DALYs.
+'''
+
+)
 
 # Summary of the categorical columns
 st.write(merged_df.describe(include='object'))
 
 st.subheader('Exploratory Data Analysis')
 #check for null values
+st.markdown('**Check for null values**')
 st.write(merged_df.isnull().sum())
-
-
+st.markdown('Check for duplicates')
 #check the data for duplicates
 st.write(merged_df.duplicated().sum())
 
