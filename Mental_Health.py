@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 import io
+import plotly.express as px
 
 st.cache(suppress_st_warning=True)
 # Read the CSV files
@@ -109,10 +110,10 @@ st.write(merged_df.duplicated().sum())
 
 st.markdown('**Outlier Detection**')
 # Filter numerical columns for selection
-numerical_columns = ['DALY', 'GDP_per_Capita', 'WHO_Support per 100k', 'Health expenditure per capita.Value']
+numerical_columns = ['DALY', 'GDP_per_Capita', 'WHO_Support per 100.k', 'Health expenditure per capita.Value']
 
 # Streamlit selectbox for variable selection
-st.subheader("Variable Selection")
+st.markdown("**Variable Selection**")
 selected_variable = st.selectbox("Select a numerical variable:", numerical_columns)
 
 # Box Plot
@@ -130,15 +131,14 @@ ax.set_title(f"Histogram of {selected_variable}")
 st.pyplot(fig)
 
 st.markdown('''From the above we can note that the there is a considerable spread in the DALY variable and numerous 
-            outliers which shows that many countries have DALY values that are considerably higher than the average.Further, from the 
+            outliers. The data shows that many countries have DALY values that are considerably higher than the average.Further, from the 
             histogram, we can observe that the data is positively skewed with a long tail. This means that a majority of the country
-            are concentrated around the lower end of the DALY distribution
+            are concentrated around the lower end of the DALY distribution. A similar trend is observed with the GDP per capita and health expenditure per capita values. 
             
-            A similar trend is observed with the GDP per capita and health expenditure per capita values. From the above we can summarize the 
-            following
+            From the above we can summarize the following
             - From the high DALY values, there is a significant burden of mental health disorders globally
             - From the distribution, some countries experience a disproportionately higher burden as compared to others
-            - 
+            - The median WHO support per 100,000 is 1.9 amd majority of the countries are on the lower end of the distribution.
             '''
     
 )
@@ -161,6 +161,10 @@ st.pyplot(fig)
 st.caption('Histogram after log transformation')
 
 st.markdown('**Additional Variables**')
+
+st.markdown(''' We shall add a new variable health expenditure:GDP ratio to determine the share of GDP going to health
+'''
+)
 #Add a column- ratio of health expenditure to GDP
 merged_df['Health_exp:GDP']=(merged_df['Health expenditure per capita.Value']/merged_df['GDP_per_Capita']).replace([np.inf, -np.inf], 0)
 
@@ -193,20 +197,20 @@ st.caption('Correlation matrix')
 #Display the correlation matrix in a table
 st.write(correlation_matrix.style.background_gradient(cmap='coolwarm'))
 
-st.markdown('''- DALY and GDP per capita are negatively correlated. This suggests that wealthier countries haver 
-            lower DALY values
+st.markdown('''- DALY and GDP per capita are negatively correlated. This suggests that high income countries have lower DALY values
+            than lower income countries. 
 
-               - DALY and health expenditure per capita are positively correlated. This suggest that countries
-            with high health expenditure also have high values. This is the impact of high burden of mental disease, as countries spend more
-            to address these health concerns 
-
+               - DALY and health expenditure per capita, and the share of GDP going to health expenditure are positively correlated.
+            This presents the impact of mental health disorders, where higher expenditure is directed towards addressing the indentified health concerns.
+            Further, with more funding directed towards health, more cases can be identified and treated.  
+                - 
 
             ''')
 
 st.subheader('Feature Selection')
 st.markdown(''' To select features, we shall assess feature importance. As the target variable (DALY) is continuous,
-            we shall utilize a regression model- Random Forest Regressor. To reduce potential for data leakage we shall exclude country, region and 
-            cause from the selection.
+            we shall utilize a regression model- Random Forest Regressor. To reduce potential for data leakage we shall exclude country, region, 
+            cause and health:exp ratio from the selection.
 ''')
 
 from sklearn.model_selection import train_test_split
@@ -215,7 +219,7 @@ from sklearn.ensemble import RandomForestRegressor
 # Select features for X
 merged_df=merged_df.dropna()
 
-X = merged_df.drop((['DALY_log','DALY','Country','Region','Cause']), axis='columns')
+X = merged_df.drop((['DALY_log','DALY','Country','Region','Cause','Health_exp:GDP']), axis='columns')
 # Select target variable for y
 y = merged_df['DALY_log']
 
@@ -241,9 +245,7 @@ st.caption('Feature importances')
 
 
 
-st.markdown(''' From the Analysis, the economic indicators play a primary role in influencing DALY values
-            Year also also plays a role, indicating changing DALY values over time. 
-''')
+st.markdown(''' ''')
 
 st.subheader('Model development')
 #Aggregate the dataframe for clustering
@@ -296,7 +298,7 @@ cluster_stats = df_agg.groupby('Cluster')[['DALY', 'Health_exp_GDP', 'WHO_Suppor
 st.dataframe(cluster_stats)
 
 # Visual Display of the cluster
-import plotly.express as px
+
 fig_plotly = px.scatter(
     df_agg, 
     x="Health_exp_GDP", 
