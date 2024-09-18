@@ -99,7 +99,7 @@ st.markdown('''The DALY mean is 35,651 DALYs with a standard deviation of 197,58
 )
 
 # Summary of the categorical columns
-st.write(merged_df.describe(include='object'))
+st.write(merged_df.describe(include='all'))
 
 st.subheader('Exploratory Data Analysis')
 #check for null values
@@ -331,7 +331,7 @@ st.markdown('''
             have the lowest average mental health professionals. They also have the highest healthcare funding in relation to GDP per 
             capita. The countries could prioritize reallocation of resources to train more mental health professional, development
             of mental health facilities
-            -Cluster 2: These are the countries with the lowest average DALYs and the highest average mental health professional per 100,000.
+            - Cluster 2: These are the countries with the lowest average DALYs and the highest average mental health professional per 100,000.
             These countries have relatively better mental health outcomes and resource allocation as compared to the other clusters.
             ''' 
 
@@ -401,62 +401,3 @@ st.table(cluster_stats.loc[selected_cluster])
 st.markdown(f'**Countries in Cluster {selected_cluster}**')
 st.table(filtered_df['Country'])
 
-import requests
-from bs4 import BeautifulSoup
-import pandas as pd
-from requests_html import HTMLSession # type: ignore
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-
-def scrape_articles(url, country):
-    session = HTMLSession()
-    response = session.get(url, verify=False)
-    response.html.render(timeout=20, sleep=5)  # Render JavaScript
-
-    soup = BeautifulSoup(response.html.html, 'html.parser')
-
-    articles = []
-    for article_div in soup.find_all('div', class_='browse_item'):
-        title_link = article_div.find('a')
-        title = title_link.text
-        link = 'https://extranet.who.int/mindbank/' + title_link['href']
-        articles.append({'Title': title, 'Link': link})
-
-    df_articles = pd.DataFrame(articles)
-    df_articles['Country'] = country
-
-    return df_articles
-
-
-def scrape_countries(url):
-    session = HTMLSession()
-    response = session.get(url, verify=False)
-    response.html.render(timeout=20, sleep=5)  # Render JavaScript
-
-    soup = BeautifulSoup(response.html.html, 'html.parser')
-
-    countries = []
-    for country_link in soup.find_all('a', href=True):
-        country_url = country_link['href']
-        if country_url.startswith("https://extranet.who.int/mindbank/country/"):
-            country_name = country_link.text.strip()
-            countries.append({'Country': country_name, 'Link': country_url})
-
-    return pd.DataFrame(countries)
-
-
-# Main URL
-main_url = "https://extranet.who.int/mindbank/collection/type/mental_health_strategies_and_plans"
-
-# Scrape country links
-df_countries = scrape_countries(main_url)
-
-# Create DataFrame for articles
-df_all_articles = pd.DataFrame(columns=['Country', 'Title', 'Link'])
-
-# Scrape articles for each country
-for _, row in df_countries.iterrows():
-    df_all_articles = pd.concat([df_all_articles, scrape_articles(row['Link'], row['Country'])])
-
-print(df_all_articles)
