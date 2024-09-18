@@ -3,60 +3,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
+import io
+import plotly.express as px
 
+st.cache(suppress_st_warning=True)
 # Read the CSV files
+st.title('Global Mental Health Insights - Clustering Analysis')
+st.markdown('''
+            According to the World Health Organiztion (WHO), mental well being is not only the absence of mental illness but a state 
+            of  well-being encompassing the physical, mental and social. The global burden of mental health disorders is significant and growing overtime.
+            There is eunequal burden among countries and socio-economic groups. Interventions by key organizations, including WHO, play a crucial role in 
+            supporting countries to strengthen their mental health systems and ensuring that mental health care is integrated to primary care settings.
+            This project aims to explore:
+            -The distribution and burden of mental health across different countries and regions
+            -Examining WHO support in relation to the burden of mental disorders
+            -Exploring the relationshio between economic indicatiors and mental health indicators
+            -Indentify patterns and clusters of countries with similar mental health profiles, which can inform targeted interventions and policy recommendations
 
-df_daly=pd.read_csv("Primary_Fact_GlobalDALY_All.csv")
-df_governance=pd.read_csv('Primary_Fact_GovernanceMentalHealth.csv')
-df_spending=pd.read_csv('Primary_Fact_GovernmentSpendingMentalHealth.csv')
-df_GDP=pd.read_csv("Primary_Fact_IMHE_GDP+HealthSpend.csv")
-df_Age=pd.read_csv('Primary_Fact_MentalDisorder_Gender_Age_2000-17.csv')
-df_population=pd.read_csv('Primary_Fact_Population_2000-17.csv')
-df_support=pd.read_csv('Primary_Fact_WHOSupportServicesAvail.csv')
-df_countries=pd.read_csv('Primary_Dim_Countries.csv')
-
-st.cache_data
-
-
-# Create a list of all DataFrame
-
-dfs_All=[df_daly,df_governance,df_spending,df_GDP,df_Age,df_population,df_support,df_countries]
-
-#List of DataFrame names
-dfs_Names=['df_daly','df_governance','df_spending','df_GDP','df_Age','df_population','df_support','df_countries']
-
-#Create Streamlit Data Frames
-
-for df, df_name in zip(dfs_All, dfs_Names):
-      st.subheader(f"Dataframe: {df_name}")
-      st.dataframe(df)
-
-#Given that the df_GDP is too large to display, we shall select specific columns for analysis before proceeding to merge the
-#data to one df
-
-st.subheader('Data Cleaning and Preprocessing')
-
-st.markdown('**DALY DF**')
-st.markdown('''From the DALY dataframe, the rows under the metric percent will be selected, as number and rate are different measures
-            for the same observation. Then, rename the columns removing the spaces, and convert the year column to a date data type
 ''')
-
-df_daly=df_daly[['Cause','Code (Data6)','metric_name', 'sex_name', 'year (Data6)', 'val (Data6)']]
-# filter to only include where the metric measure is percent
-df_daly=df_daly.loc[df_daly['metric_name']=="Percent"]
-#rename the column names
-df_daly_r=df_daly.rename(columns={'Code (Data6)': 'code', 'year (Data6)': 'year', 'val (Data6)': 'daly%','sex_name':'sex'})
-#convert the year column to numeric values as non-numeric strings are contained in the data
-#df_daly_r=pd.to_numeric(df_daly_r['year'].astype(str).str.replace(r'1/1/', '', regex=True))
-
-
-st.markdown('**GOVERNANCE DF**')
-# Select necessary columns
-df_governance=df_governance[['Code (Data)','Stand-alone mental health legislation','Stand-alone policy or plan for mental health', 'Year (Data)']]
-#rename the column names
-df_governance=df_governance.rename(columns={'Code (Data)': 'code', 'Year (Data)': 'year','Stand-alone mental health legislation':'legislation','Stand-alone policy or plan for mental health':'policy'})
-#convert the year column to numeric values
-#df_governance=pd.to_numeric(df_governance['year'].astype(str).str.replace(r'1/1/', '', regex=True))
 
 st.markdown('**Key definitions**')
 st.markdown('''
@@ -87,31 +51,27 @@ s = buffer.getvalue()
 
 st.text(s)
 
-st.markdown('**Spending, Support**')
-#renaming the columns
-df_spending=df_spending.rename({'Code (Data3)': 'code', 'Government Expenditure on Mental Health': 'expenditure_mental health'})
+st.markdown('**Country Column names and data type**')
+buffer = io.StringIO()
+df_countries.info(buf=buffer)
+s = buffer.getvalue()
 
-df_support=df_support.rename(columns={'Code (Data4)': 'code', 'Year (Data4)': 'year'})
-#df_support=pd.to_numeric(df_support['year'].astype(str).str.replace(r'1/1/', '', regex=True))
+st.text(s)
 
-#convert the year columns to date datatype
-for df in[df_daly_r,df_governance,df_GDP,df_Age,df_support,df_population]:
-     df['year']=pd.to_datetime(df['year'], format="%d/%m/%Y",errors='coerce').dt.year
+st.markdown('''**Unique column values and counts**''')
 
-#convert the year columns in population to date datatype
+st.write(df_daly.Mental_health_legislation.value_counts())
+st.write(df_daly.Mental_health_policy.value_counts())
+st.write(df_daly.Mental_health_professional.value_counts())
 
-df_daly_r,df_governance,df_GDP,df_population,df_Age,df_spending,df_support,df_countries
-#Create two data Frames (Focus on the disability adjusted life years)
-merged_df=pd.merge(df_daly_r,df_countries, left_on='code', right_on='Alpha-3 code', how='left')
-merged_df=pd.merge(merged_df,df_Age,on=['code','year','sex'], how='inner')
-merged_df=pd.merge(merged_df,df_GDP,on=['code','year'], how='left')
-merged_df=pd.merge(merged_df,df_governance,on=['code','year'], how='left')
-merged_df=pd.merge(merged_df,df_spending,on=['code'], how='left')
-merged_df=pd.merge(merged_df,df_support,on=['code'], how='left')
+st.markdown('**Merged data frame**')
 
-merged_df=pd.merge(merged_df,df_population,on=['code','year','sex'], how='inner')
+# Rename columns for merging
+df_countries = df_countries.rename(columns={'Alpha-3 code': 'Country_Code'})
+df_daly = df_daly.rename(columns={'Code (Data6)': 'Country_Code'})
 
-
+# Merge the dataframes
+merged_df=df_daly.merge(df_countries, on='Country_Code', how='left')
 st.dataframe(merged_df)
 
 st.markdown('''We shall drop redundant columns from the data frame :Country_Code,Country Code,Income group (group)''')
